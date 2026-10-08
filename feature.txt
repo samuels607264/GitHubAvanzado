@@ -1,1 +1,2 @@
 Nueva funcionalidad creada por el colaborador.
+Prueba del workflow CI corregido.
