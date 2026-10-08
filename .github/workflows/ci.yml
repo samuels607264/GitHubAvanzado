@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [develop]
+
+  push:
+    branches: [develop]
+
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Registrar la rama en el README
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/') }}
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          LINE="- Añadida feature: $BRANCH"
+          grep -qxF -- "$LINE" README.md || echo "$LINE" >> README.md
+
+      - name: Commit y push del README
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/') }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "Sin cambios que commitear"
+          else
+            git commit -m "docs: registrar rama"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
+  validate-dev:
+    needs: update-readme
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar entorno de desarrollo
+        shell: powershell
+        env:
+          TOKEN: ${{ secrets.DEV_TOKEN }}
+        run: |
+          if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
+            Write-Host "CI: validacion de desarrollo correcta"
+          } else {
+            Write-Host "CI: validacion fallida"
+            exit 1
+          }
