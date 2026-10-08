@@ -23,14 +23,14 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Registrar la rama en el README
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/') }}
         run: |
           BRANCH="${{ github.head_ref }}"
           LINE="- Añadida feature: $BRANCH"
           grep -qxF -- "$LINE" README.md || echo "$LINE" >> README.md
 
       - name: Commit y push del README
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/') }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -55,8 +55,8 @@ jobs:
           TOKEN: ${{ secrets.DEV_TOKEN }}
         run: |
           if ($env:TOKEN -eq $env:LOCAL_DEV_TOKEN) {
-            Write-Host "CI: validación de desarrollo correcta"
+            Write-Host "CI: validacion de desarrollo correcta"
           } else {
-            Write-Host "CI: validación fallida"
+            Write-Host "CI: validacion fallida"
             exit 1
           }
